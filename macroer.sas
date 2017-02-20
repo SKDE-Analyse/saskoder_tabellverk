@@ -150,16 +150,6 @@ quit;
 %macro tilrettelegg(datasett =);
 
 /*
-Legge inn døgn/dag-variabel
-*/
-data tmp;
-set &datasett;
-  if liggetid = 0 then erdag = 1;
-  else erdag = 0;
-format erdag erdag.;
-run;
-
-/*
 slå sammen sykehus og HF fra sør-norge
 */
 data tmp;
@@ -255,7 +245,6 @@ proc sql;
           BehSh,
           hastegrad, 
           DRGtypeHastegrad,
-		      erdag,
           /* summert liggetid */
             (SUM(liggetid)) as liggetid, 
           /* summert korrvekt */
@@ -280,7 +269,6 @@ from tabl3
                BehSh,
                hastegrad,
                DRGtypeHastegrad,
-			   erdag,
                BoHF,
                Behhf_hn,
                BehHF;
