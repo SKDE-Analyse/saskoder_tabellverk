@@ -44,7 +44,6 @@ Returnerer to datasett:
 data innbygg;
 set innbygg.innb_2004_2015_bydel_allebyer;
   where aar in (2011:2015);
-  drop ermann;
   %boomraader;
 run;
 
@@ -61,11 +60,13 @@ create table tmp_pop as
 select distinct
    aar,
 	ald_gr4,
+   ermann,
 	(SUM(innbyggere)) as innb
 from innbygg
 group by
    aar,
-	ald_gr4;
+	ald_gr4,
+   ermann;
 quit;
 
 
@@ -102,6 +103,7 @@ create table bosh_innbygg as
 select distinct
           aar,
           ald_gr4,
+          ermann,
           BoRHF, 
           BoHF, 
           BoShHN,
@@ -111,6 +113,7 @@ from innbygg
 group by
           aar,
           ald_gr4,
+          ermann,
           BoRHF, 
           BoHF, 
           BoShHN;
@@ -122,6 +125,7 @@ create table bohf_innbygg as
 select distinct
           aar,
           ald_gr4,
+          ermann,
           BoRHF,
           BoHF, 
           /* summert innbyggere */
@@ -130,18 +134,20 @@ from innbygg
 group by
           aar,
           ald_gr4,
+          ermann,
           BoRHF, 
           BoHF;
 quit;
 
+%slett_datasett(datasett = tmp_pop);
+%slett_datasett(datasett = tmp_pop_tot);
+%slett_datasett(datasett = innbygg);
 
 %mend;
 
 
 
 %macro tilrettelegg(datasett =);
-
-/*Burde muligens splittes opp*/
 
 /*
 Legge inn døgn/dag-variabel
@@ -179,7 +185,6 @@ run;
 %tilretteleggInnbyggerfil();
 
 
-
 /* Legge inn BOShHN innbyggertall */
 
 proc sql;
@@ -191,7 +196,8 @@ tmp.aar=bosh_innbygg.aar and
 tmp.BoRHF=bosh_innbygg.BoRHF and 
 tmp.BoHF=bosh_innbygg.BoHF and 
 tmp.BoShHN=bosh_innbygg.BoShHN and
-tmp.ald_gr4=bosh_innbygg.ald_gr4;
+tmp.ald_gr4=bosh_innbygg.ald_gr4 and
+tmp.ermann=bosh_innbygg.ermann;
 quit;
 
 /* Legge inn BOHF innbyggertall */
@@ -204,7 +210,8 @@ on
 tabl.aar=bohf_innbygg.aar and
 tabl.BoRHF=bohf_innbygg.BoRHF and 
 tabl.BoHF=bohf_innbygg.BoHF and
-tabl.ald_gr4=bohf_innbygg.ald_gr4;
+tabl.ald_gr4=bohf_innbygg.ald_gr4 and
+tabl.ermann=bohf_innbygg.ermann;
 quit;
 
 proc sql;
@@ -213,11 +220,10 @@ proc sql;
     from tabl2 left join ald_just
     on 
     tabl2.aar=ald_just.aar and
-    tabl2.ald_gr4=ald_just.ald_gr4;
+    tabl2.ald_gr4=ald_just.ald_gr4 and
+    tabl2.ermann=ald_just.ermann;
 quit;
 
-
-* ta bort faktor hvis man ikke vil ha aldersjustering;
 data tabl3;
 set tabl3;
 bohf_rate = 1000*faktor/bohf_innb;
@@ -233,7 +239,6 @@ if (hastegrad eq .) then hastegrad = 9;
 format hastegrad innmateHast_2delt.;
 run;
 
-
 proc sql;
    create table &datasett._ut as
    select distinct
@@ -245,7 +250,7 @@ proc sql;
           BoShHN, 
           Aktivitetskategori3, 
           BehRHF,
-		      Behhf_hn,
+	      Behhf_hn,
           BehHF,
           BehSh,
           hastegrad, 
@@ -316,10 +321,7 @@ run;
 %slett_datasett(datasett = tabl);
 %slett_datasett(datasett = tabl2);
 %slett_datasett(datasett = tabl3);
-%slett_datasett(datasett = innbygg);
 %slett_datasett(datasett = tmp);
-%slett_datasett(datasett = tmp_pop);
-%slett_datasett(datasett = tmp_pop_tot);
 %slett_datasett(datasett = ald_just);
 %slett_datasett(datasett = tabl);
 
