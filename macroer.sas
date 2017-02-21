@@ -147,33 +147,21 @@ quit;
 
 
 
-%macro tilrettelegg(datasett =);
+%macro tilrettelegg(dsn =, behandler = 1, grupperinger = 0);
 
 /*
-slå sammen sykehus og HF fra sør-norge
+Lage datasett med innbyggere
 */
-data tmp;
-set tmp;
-  %beh_sor;
-  %bo_sor;
-run;
-
-data tmp;
-set tmp;
-  format BehHF BehHF.;
-run;
-
-/*
-Laste inn innbyggere, for rateberegninger
-*/
-
-data tmp;
-set tmp;
-%ald_gr4;
-run;
-
 %tilretteleggInnbyggerfil();
 
+data tmp;
+set &dsn;
+run;
+
+
+%if &behandler ne 0 %then %do;
+   %definerBehandler(dsn=tmp);
+%end;
 
 /* Legge inn BOShHN innbyggertall */
 
@@ -182,12 +170,12 @@ create table tabl as
 select *
 from tmp left join bosh_innbygg
 on 
-tmp.aar=bosh_innbygg.aar and 
-tmp.BoRHF=bosh_innbygg.BoRHF and 
-tmp.BoHF=bosh_innbygg.BoHF and 
-tmp.BoShHN=bosh_innbygg.BoShHN and
-tmp.ald_gr4=bosh_innbygg.ald_gr4 and
-tmp.ermann=bosh_innbygg.ermann;
+   tmp.aar=bosh_innbygg.aar and 
+   tmp.BoRHF=bosh_innbygg.BoRHF and 
+   tmp.BoHF=bosh_innbygg.BoHF and 
+   tmp.BoShHN=bosh_innbygg.BoShHN and
+   tmp.ald_gr4=bosh_innbygg.ald_gr4 and
+   tmp.ermann=bosh_innbygg.ermann;
 quit;
 
 /* Legge inn BOHF innbyggertall */
@@ -197,110 +185,117 @@ create table tabl2 as
 select *
 from tabl left join bohf_innbygg
 on 
-tabl.aar=bohf_innbygg.aar and
-tabl.BoRHF=bohf_innbygg.BoRHF and 
-tabl.BoHF=bohf_innbygg.BoHF and
-tabl.ald_gr4=bohf_innbygg.ald_gr4 and
-tabl.ermann=bohf_innbygg.ermann;
+   tabl.aar=bohf_innbygg.aar and
+   tabl.BoRHF=bohf_innbygg.BoRHF and 
+   tabl.BoHF=bohf_innbygg.BoHF and
+   tabl.ald_gr4=bohf_innbygg.ald_gr4 and
+   tabl.ermann=bohf_innbygg.ermann;
 quit;
 
 proc sql;
-    create table tabl3 as
-    select *
-    from tabl2 left join ald_just
-    on 
-    tabl2.aar=ald_just.aar and
-    tabl2.ald_gr4=ald_just.ald_gr4 and
-    tabl2.ermann=ald_just.ermann;
+   create table tabl3 as
+   select *
+   from tabl2 left join ald_just
+   on 
+   tabl2.aar=ald_just.aar and
+   tabl2.ald_gr4=ald_just.ald_gr4 and
+   tabl2.ermann=ald_just.ermann;
 quit;
 
 data tabl3;
 set tabl3;
-bohf_rate = 1000*faktor/bohf_innb;
-bosh_rate = 1000*faktor/bosh_innb;
-bohf_drgrate = 1000*faktor*korrvekt/bohf_innb;
-bosh_drgrate = 1000*faktor*korrvekt/bosh_innb;
+   bohf_rate = 1000*faktor/bohf_innb;
+   bosh_rate = 1000*faktor/bosh_innb;
+   bohf_drgrate = 1000*faktor*korrvekt/bohf_innb;
+   bosh_drgrate = 1000*faktor*korrvekt/bosh_innb;
+
 drop bohf_innb bosh_innb;
 run;
 
 data tabl3;
 set tabl3;
-if (hastegrad eq .) then hastegrad = 9;
+where Ald_gr4 ne . and ermann ne .;
+   if (hastegrad eq .) then hastegrad = 9;
 format hastegrad innmateHast_2delt.;
+format BehSh behSh.;
 run;
 
 proc sql;
-   create table &datasett._ut as
+   create table &dsn._ut as
    select distinct
-          aar, 
-          Ald_gr4,
-          Ermann,
-          BoRHF, 
-          BoHF,
-          BoShHN, 
-          Aktivitetskategori3, 
-          BehRHF,
-	      Behhf_hn,
-          BehHF,
-          BehSh,
-          hastegrad, 
-          DRGtypeHastegrad,
-          /* summert liggetid */
-            (SUM(liggetid)) as liggetid, 
-          /* summert korrvekt */
-            (SUM(korrvekt)) as drg_poeng, 
-          /* antall pasienter */
-            (SUM(kontakt)) as kontakter,
-          /* rate bosh */
-            (SUM(bohf_rate)) as bohf_rate,
-          /* rate bohf */
-            (SUM(bosh_rate)) as bosh_rate,
-          /* rate bosh */
-            (SUM(bohf_drgrate)) as bohf_drgrate,
-          /* rate bohf */
-            (SUM(bosh_drgrate)) as bosh_drgrate
+      aar,
+      %if &grupperinger ne 0 %then %do;
+         Ald_gr4,
+         Ermann,
+         Aktivitetskategori3,
+         hastegrad, 
+         DRGtypeHastegrad,
+      %end;
+      BehRHF,
+      %if &behandler eq 0 %then %do;
+         BehHF,
+         Behhf_hn,
+         BehSh,
+		%end;
+		%else %do;
+         behandler,
+		%end;
+      BoRHF, 
+      BoHF,
+      BoShHN, 
+      /* summert liggetid */
+      (SUM(liggetid)) as liggetid, 
+      /* summert korrvekt */
+      (SUM(korrvekt)) as drg_poeng, 
+      /* antall pasienter */
+      (SUM(kontakt)) as kontakter,
+      /* rate bosh */
+      (SUM(bohf_rate)) as bohf_rate,
+      /* rate bohf */
+      (SUM(bosh_rate)) as bosh_rate,
+      /* rate bosh */
+      (SUM(bohf_drgrate)) as bohf_drgrate,
+      /* rate bohf */
+      (SUM(bosh_drgrate)) as bosh_drgrate
 
 from tabl3
-      group by aar,
-               Ald_gr4,
-               ermann,
-               BoShHN,
-               Aktivitetskategori3,
-               BehSh,
-               hastegrad,
-               DRGtypeHastegrad,
-               BoHF,
-               Behhf_hn,
-               BehHF;
+   group by aar,
+      %if &grupperinger ne 0 %then %do;
+         Ald_gr4,
+         ermann,
+         Aktivitetskategori3,
+         hastegrad,
+         DRGtypeHastegrad,
+      %end;
+      %if &behandler eq 0 %then %do;
+         BehHF,
+         Behhf_hn,
+         BehSh,
+      %end;
+      %else %do;
+         behandler,
+      %end;
+      BoHF,
+      BoShHN;
 quit;
 
-
-/* Antall drg-poeng pr. pasient */
-/*data &datasett._ut;*/
-/*set &datasett._ut;*/
-/*drg_index = drg_poeng/kontakter;*/
-/*run;*/
-
 /* nye navn */
-data &datasett._ut;
-set &datasett._ut;
-*rename DRGtypeHastegrad = hastegrad_drgtype_dogn;
-rename Aktivitetskategori3 = behandlingsniva;
-rename BoRHF = boomr_RHF;
-rename BoHF = boomr_HF;
-rename BoShHN = boomr_sykehus;
-rename BehRHF = behandlende_RHF;
-rename Behhf = behandlende_HF;
-rename Behhf_hn = behandlende_HF_HN;
-rename BehSh = behandlende_sykehus;
-rename Ald_gr4 = alder;
-rename ermann = kjonn;
-run;
-
-data &datasett._ut;
-set &datasett._ut;
-where alder ne . and kjonn ne .;
-format behandlende_sykehus behSh.;
+data &dsn._ut;
+set &dsn._ut;
+   %if &grupperinger ne 0 %then %do;
+      rename Aktivitetskategori3 = behandlingsniva;
+      rename Ald_gr4 = alder;
+      rename ermann = kjonn;
+   %end;
+   rename BoRHF = boomr_RHF;
+   rename BoHF = boomr_HF;
+   rename BoShHN = boomr_sykehus;
+   rename BehRHF = behandlende_RHF;
+   %if behandler eq 0 %then %do;
+      rename Behhf = behandlende_HF;
+      rename Behhf_hn = behandlende_HF_HN;
+      rename BehSh = behandlende_sykehus;
+   %end;
 run;
 
 
@@ -312,7 +307,6 @@ run;
 %slett_datasett(datasett = tmp);
 %slett_datasett(datasett = ald_just);
 %slett_datasett(datasett = tabl);
-
 
 %mend;
 
@@ -350,3 +344,45 @@ run;
 /*run;*/
 
 %mend;
+
+%macro aggregerMax(dsn = );
+
+proc sql;
+   create table &dsn._ut as
+   select distinct
+          aar, 
+          BoRHF, 
+          BoHF,
+          BoShHN, 
+          BehRHF,
+	      Behhf_hn,
+          BehHF,
+          BehSh,
+          /* summert liggetid */
+            (SUM(liggetid)) as liggetid, 
+          /* summert korrvekt */
+            (SUM(korrvekt)) as drg_poeng, 
+          /* antall pasienter */
+            (SUM(kontakt)) as kontakter,
+          /* rate bosh */
+            (SUM(bohf_rate)) as bohf_rate,
+          /* rate bohf */
+            (SUM(bosh_rate)) as bosh_rate,
+          /* rate bosh */
+            (SUM(bohf_drgrate)) as bohf_drgrate,
+          /* rate bohf */
+            (SUM(bosh_drgrate)) as bosh_drgrate
+
+from &dsn
+      group by aar,
+               BoShHN,
+               BehSh,
+               BoHF,
+               Behhf_hn,
+               BehHF;
+quit;
+
+%mend;
+
+
+

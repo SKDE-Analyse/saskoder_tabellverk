@@ -31,6 +31,17 @@ value DRGtypeHastegrad
 4='Akutt kirurgi'
 9='Ukjent';
 
+value behandler
+1="Eget lokalsykehus"
+2="UNN Tromsø"
+3="NLSH Bodø"
+4="Annet sykehus i eget HF"
+5="Annet HF i HN"
+6="HF i andre RHF"
+7="Private sykehus"
+8="Avtalespesialist";
+
+
 Value BehHF 
 1='Finnmarkssykehuset HF' 
 2='UNN HF' 

@@ -1,6 +1,13 @@
+
+%let filbane=\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Data\SAS\;
+options sasautos=("&filbane.Makroer\master" SASAUTOS);
+
+%include "&filbane.Formater\master\SKDE_somatikk.sas";
+%include "&filbane.Formater\master\NPR_somatikk.sas";
+%include "&filbane.Formater\master\bo.sas";
+%include "&filbane.Formater\master\beh.sas";
+
 /* lage sett for tabellverk-generering */
-
-
 
 data off_tot;
 set npr_skde.magnus_sho_2011 npr_skde.magnus_sho_2012 npr_skde.magnus_sho_2013 npr_skde.magnus_sho_2014 npr_skde.magnus_sho_2015;
@@ -16,13 +23,24 @@ behSh = 500;
 liggetid = 0;
 Aktivitetskategori3 = 4;
 hastegrad = .;
+AvtSpes = 1;
 run;
 
 /* Legg på DRGtypeHastegrad fra parvus */
 %varFraParvus(dsnMagnus = off_tot, var_som = DRGtypeHastegrad)
 
+
+data npr_utva.ahs_priv_nord;
+set priv_tot;
+run;
+
+data npr_utva.ahs_off_nord;
+set off_tot;
+run;
+
+
 data tabell_alle;
-set priv_tot off_tot;
+set npr_utva.ahs_off_nord npr_utva.ahs_priv_nord;
 keep aar alder ermann korrvekt liggetid
 BoShHN BoHF BoRHF BehSh BehHF BehRHF
 Aktivitetskategori3 hastegrad
@@ -37,29 +55,26 @@ if Aktivitetskategori3 = 3 then drgtypehastegrad = 9;
 run;
 
 
-*data npr_utva.ahs_tabellverk_avd;
-*set tabell_alle;
-*run;
-
-/* Unik pasient på behf? besh? */
-/*%unik_pasient(datasett = tabell_2010_2014, variabel = kontakt);*/
+%let datasett = tabell_klargjor;
 
 /*
-lagre datasett for senere bruk
+slå sammen sykehus og HF fra sør-norge, og lag aldersgrupper
 */
+data &datasett;
+set tabell_alle;
+  %beh_sor;
+  %bo_sor;
+  %ald_gr4;
+  format BehHF BehHF.;
+run;
 
-/*data skde_arn.tabell_2011_2014;*/
-/*set tabell_2011_2014;*/
-/*run;*/
+%tilretteleggInnbyggerfil();
 
-%let datasett = tabell_alle;
+%tilrettelegg(dsn = &datasett);
 
 
-%tilrettelegg(datasett = tabell_alle);
-
-
-data tabell_alle_ut;
-set tabell_alle_ut;
+data &datasett._ut;
+set &datasett._ut;
 format behandlende_sykehus behSh.;
 format boomr_HF BoHF_kort.;
 format boomr_sykehus boshHN.;
@@ -68,10 +83,10 @@ run;
 
 
 data skde_arn.tabellverk_test;
-set tabell_alle_ut;
+set &datasett._ut;
 run;
 
-proc export data=tabell_alle_ut
+proc export data=&datasett._ut
 outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\kjonnaldersjustert.csv"
 dbms=csv
 replace;
