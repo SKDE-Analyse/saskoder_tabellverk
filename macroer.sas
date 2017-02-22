@@ -96,7 +96,7 @@ drop innb_tot innb;
 run;
 
 
-/* Antall innbyggere i bohf og bosh*/
+/* Antall innbyggere i bosh*/
 
 proc sql;
 create table bosh_innbygg as
@@ -119,7 +119,8 @@ group by
           BoShHN;
 quit;
 
-* ta bort ald_gr4 hvis man ikke vil ha aldersjustering;
+/* Antall innbyggere i bohf*/
+
 proc sql;
 create table bohf_innbygg as
 select distinct
@@ -138,6 +139,26 @@ group by
           BoRHF, 
           BoHF;
 quit;
+
+/* Antall innbyggere i borhf*/
+
+proc sql;
+create table borhf_innbygg as
+select distinct
+          aar,
+          ald_gr4,
+          ermann,
+          BoRHF,
+          /* summert innbyggere */
+            (SUM(innbyggere)) as borhf_innb
+from innbygg
+group by
+          aar,
+          ald_gr4,
+          ermann,
+          BoRHF;
+quit;
+
 
 %slett_datasett(datasett = tmp_pop);
 %slett_datasett(datasett = tmp_pop_tot);
@@ -193,27 +214,41 @@ on
 quit;
 
 proc sql;
-   create table tabl3 as
-   select *
-   from tabl2 left join ald_just
-   on 
-   tabl2.aar=ald_just.aar and
-   tabl2.ald_gr4=ald_just.ald_gr4 and
-   tabl2.ermann=ald_just.ermann;
+create table tabl3 as
+select *
+from tabl2 left join borhf_innbygg
+on 
+   tabl2.aar=borhf_innbygg.aar and
+   tabl2.BoRHF=borhf_innbygg.BoRHF and 
+   tabl2.ald_gr4=borhf_innbygg.ald_gr4 and
+   tabl2.ermann=borhf_innbygg.ermann;
 quit;
 
-data tabl3;
-set tabl3;
-   bohf_rate = 1000*faktor/bohf_innb;
-   bosh_rate = 1000*faktor/bosh_innb;
-   bohf_drgrate = 1000*faktor*korrvekt/bohf_innb;
-   bosh_drgrate = 1000*faktor*korrvekt/bosh_innb;
 
-drop bohf_innb bosh_innb;
+proc sql;
+   create table tabl4 as
+   select *
+   from tabl3 left join ald_just
+   on 
+   tabl3.aar=ald_just.aar and
+   tabl3.ald_gr4=ald_just.ald_gr4 and
+   tabl3.ermann=ald_just.ermann;
+quit;
+
+data tabl4;
+set tabl4;
+   bosh_rate = 1000*faktor/bosh_innb;
+   bohf_rate = 1000*faktor/bohf_innb;
+   borhf_rate = 1000*faktor/borhf_innb;
+   bosh_drgrate = 1000*faktor*korrvekt/bosh_innb;
+   bohf_drgrate = 1000*faktor*korrvekt/bohf_innb;
+   borhf_drgrate = 1000*faktor*korrvekt/borhf_innb;
+
+drop bosh_innb bohf_innb borhf_innb;
 run;
 
-data tabl3;
-set tabl3;
+data tabl4;
+set tabl4;
 where Ald_gr4 ne . and ermann ne .;
    if (hastegrad eq .) then hastegrad = 9;
 format hastegrad innmateHast_2delt.;
@@ -250,15 +285,19 @@ proc sql;
       /* antall pasienter */
       (SUM(kontakt)) as kontakter,
       /* rate bosh */
+      (SUM(bosh_rate)) as bosh_rate,
+      /* rate bohf */
       (SUM(bohf_rate)) as bohf_rate,
       /* rate bohf */
-      (SUM(bosh_rate)) as bosh_rate,
-      /* rate bosh */
+      (SUM(borhf_rate)) as borhf_rate,
+      /* drg-rate bosh */
+      (SUM(bosh_drgrate)) as bosh_drgrate,
+      /* drg-rate bohf */
       (SUM(bohf_drgrate)) as bohf_drgrate,
-      /* rate bohf */
-      (SUM(bosh_drgrate)) as bosh_drgrate
+      /* drg-rate bohf */
+      (SUM(borhf_drgrate)) as borhf_drgrate
 
-from tabl3
+from tabl4
    group by 
       aar,
       Aktivitetskategori3,
@@ -312,9 +351,11 @@ run;
 
 %slett_datasett(datasett = bosh_innbygg);
 %slett_datasett(datasett = bohf_innbygg);
+%slett_datasett(datasett = borhf_innbygg);
 %slett_datasett(datasett = tabl);
 %slett_datasett(datasett = tabl2);
 %slett_datasett(datasett = tabl3);
+%slett_datasett(datasett = tabl4);
 %slett_datasett(datasett = tmp);
 %slett_datasett(datasett = ald_just);
 %slett_datasett(datasett = tabl);
