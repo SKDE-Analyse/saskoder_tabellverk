@@ -1,3 +1,13 @@
+
+%let filbane=\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Data\SAS\;
+options sasautos=("&filbane.Makroer\master" SASAUTOS);
+
+%include "&filbane.Formater\master\SKDE_somatikk.sas";
+%include "&filbane.Formater\master\NPR_somatikk.sas";
+*%include "&filbane.Formater\master\bo.sas";
+*%include "&filbane.Formater\master\beh.sas";
+
+
 proc format;
 
 value Ald_4Gr
@@ -39,7 +49,7 @@ value behandler
 5="Annet HF i HN"
 6="HF i andre RHF"
 7="Private sykehus"
-8="Avtalespesialist";
+8="Avtalespesialister";
 
 
 Value BehHF 

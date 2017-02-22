@@ -1,12 +1,4 @@
 
-%let filbane=\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Data\SAS\;
-options sasautos=("&filbane.Makroer\master" SASAUTOS);
-
-%include "&filbane.Formater\master\SKDE_somatikk.sas";
-%include "&filbane.Formater\master\NPR_somatikk.sas";
-%include "&filbane.Formater\master\bo.sas";
-%include "&filbane.Formater\master\beh.sas";
-
 /* lage sett for tabellverk-generering */
 
 data off_tot;
@@ -62,32 +54,26 @@ slå sammen sykehus og HF fra sør-norge, og lag aldersgrupper
 */
 data &datasett;
 set tabell_alle;
-  %beh_sor;
+*  %beh_sor;
   %bo_sor;
   %ald_gr4;
   format BehHF BehHF.;
 run;
 
-%tilretteleggInnbyggerfil();
 
-%tilrettelegg(dsn = &datasett);
+%tilrettelegg(dsn = &datasett, behandler = 0, grupperinger = 1);
 
 
-data &datasett._ut;
-set &datasett._ut;
-format behandlende_sykehus behSh.;
-format boomr_HF BoHF_kort.;
-format boomr_sykehus boshHN.;
-format behandlingsniva BEHANDLINGSNIVA3F.;
+proc export data=&datasett._ut
+/*
+outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\agg_max.csv"
+*/
+outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\unix.csv"
+dbms=csv
+replace;
 run;
 
 
 data skde_arn.tabellverk_test;
 set &datasett._ut;
-run;
-
-proc export data=&datasett._ut
-outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\kjonnaldersjustert.csv"
-dbms=csv
-replace;
 run;

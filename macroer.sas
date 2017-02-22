@@ -224,10 +224,10 @@ proc sql;
    create table &dsn._ut as
    select distinct
       aar,
+      Aktivitetskategori3,
       %if &grupperinger ne 0 %then %do;
          Ald_gr4,
          Ermann,
-         Aktivitetskategori3,
          hastegrad, 
          DRGtypeHastegrad,
       %end;
@@ -259,11 +259,12 @@ proc sql;
       (SUM(bosh_drgrate)) as bosh_drgrate
 
 from tabl3
-   group by aar,
+   group by 
+      aar,
+      Aktivitetskategori3,
       %if &grupperinger ne 0 %then %do;
          Ald_gr4,
          ermann,
-         Aktivitetskategori3,
          hastegrad,
          DRGtypeHastegrad,
       %end;
@@ -282,8 +283,8 @@ quit;
 /* nye navn */
 data &dsn._ut;
 set &dsn._ut;
+   rename Aktivitetskategori3 = behandlingsniva;
    %if &grupperinger ne 0 %then %do;
-      rename Aktivitetskategori3 = behandlingsniva;
       rename Ald_gr4 = alder;
       rename ermann = kjonn;
    %end;
@@ -291,11 +292,21 @@ set &dsn._ut;
    rename BoHF = boomr_HF;
    rename BoShHN = boomr_sykehus;
    rename BehRHF = behandlende_RHF;
-   %if behandler eq 0 %then %do;
+   %if &behandler eq 0 %then %do;
       rename Behhf = behandlende_HF;
       rename Behhf_hn = behandlende_HF_HN;
       rename BehSh = behandlende_sykehus;
    %end;
+run;
+
+data &dsn._ut;
+set &dsn._ut;
+   %if behandler eq 0 %then %do;
+      format behandlende_sykehus behSh.;
+   %end;
+   format boomr_HF BoHF_kort.;
+   format boomr_sykehus boshHN.;
+   format behandlingsniva BEHANDLINGSNIVA3F.;
 run;
 
 
@@ -307,6 +318,8 @@ run;
 %slett_datasett(datasett = tmp);
 %slett_datasett(datasett = ald_just);
 %slett_datasett(datasett = tabl);
+
+
 
 %mend;
 
