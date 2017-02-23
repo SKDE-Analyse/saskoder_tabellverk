@@ -35,8 +35,8 @@ data tabell_alle;
 set npr_utva.ahs_off_nord npr_utva.ahs_priv_nord;
 keep aar alder ermann korrvekt liggetid
 BoShHN BoHF BoRHF BehSh BehHF BehRHF
-Aktivitetskategori3 hastegrad
-DRGtypeHastegrad kontakt;
+Aktivitetskategori3 hastegrad ICD10Kap
+DRGtypeHastegrad kontakt hdg;
 kontakt = 1;
 run;
 
@@ -54,7 +54,7 @@ slå sammen sykehus og HF fra sør-norge, og lag aldersgrupper
 */
 data &datasett;
 set tabell_alle;
-*  %beh_sor;
+  %beh_sor;
   %bo_sor;
   %ald_gr4;
   format BehHF BehHF.;
@@ -63,16 +63,136 @@ run;
 
 %tilrettelegg(dsn = &datasett, behandler = 0, grupperinger = 1);
 
-
 proc export data=&datasett._ut
-/*
-outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\agg_max.csv"
-*/
-outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\unix.csv"
+outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\sykehusopphold.csv"
 dbms=csv
 replace;
 run;
 
+%tilrettelegg(dsn = &datasett, behandler = 1, grupperinger = 1);
+
+proc export data=&datasett._ut
+outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\behandler.csv"
+dbms=csv
+replace;
+run;
+
+%tilrettelegg(dsn = &datasett, behandler = 1, grupperinger = 0);
+
+proc export data=&datasett._ut
+outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\agg_max.csv"
+dbms=csv
+replace;
+run;
+
+
+data &datasett._hdg;
+set &datasett;
+where HDG ne .;
+run;
+
+%tilrettelegg(dsn = &datasett._hdg, behandler = 1, grupperinger = 0, hdg = 1);
+
+proc export data=&datasett._hdg_ut
+outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\agg_max_hdg.csv"
+dbms=csv
+replace;
+run;
+
+data &datasett;
+set &datasett;
+*where icd10kap ne .;
+run;
+
+%tilrettelegg(dsn = &datasett, behandler = 1, grupperinger = 0, icd = 1);
+
+proc export data=&datasett._ut
+outfile="\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Prosjekter\ahs_dynamisk_tabellverk\csv_filer\icd10.csv"
+dbms=csv
+replace;
+run;
+
+
+data test;
+set tabl4;
+where borhf ne 1;
+run;
+
+
+proc sql;
+   create table test_ut as
+   select distinct
+      aar,
+      Aktivitetskategori3,
+	  /*
+      %if &grupperinger ne 0 %then %do;
+         Ald_gr4,
+         Ermann,
+         hastegrad, 
+         DRGtypeHastegrad,
+      %end;
+	  */
+      BehRHF,
+	  /*
+      %if &behandler eq 0 %then %do;
+         BehHF,
+         Behhf_hn,
+         BehSh,
+		%end;
+		%else %do;
+	  */
+         behandler,
+		 /*
+		%end;
+		 */
+      BoRHF, 
+      BoHF,
+      BoShHN, 
+      /* summert liggetid */
+      (SUM(liggetid)) as liggetid, 
+      /* summert korrvekt */
+      (SUM(korrvekt)) as drg_poeng, 
+      /* antall pasienter */
+      (SUM(kontakt)) as kontakter,
+      /* rate bosh */
+      (SUM(bosh_rate)) as bosh_rate,
+      /* rate bohf */
+      (SUM(bohf_rate)) as bohf_rate,
+      /* rate bohf */
+      (SUM(borhf_rate)) as borhf_rate,
+      /* drg-rate bosh */
+      (SUM(bosh_drgrate)) as bosh_drgrate,
+      /* drg-rate bohf */
+      (SUM(bohf_drgrate)) as bohf_drgrate,
+      /* drg-rate bohf */
+      (SUM(borhf_drgrate)) as borhf_drgrate
+
+from test
+   group by 
+      aar,
+      Aktivitetskategori3,
+	  /*
+      %if &grupperinger ne 0 %then %do;
+         Ald_gr4,
+         ermann,
+         hastegrad,
+         DRGtypeHastegrad,
+      %end;
+      %if &behandler eq 0 %then %do;
+	     BehHF,
+         Behhf_hn,
+         BehSh,
+      %end;
+      %else %do;
+	  */
+         behandler,
+		 /*
+      %end;
+		 */
+	  BoRHF,
+      BoHF,
+      BoShHN;
+quit;
 
 data skde_arn.tabellverk_test;
 set &datasett._ut;

@@ -168,7 +168,7 @@ quit;
 
 
 
-%macro tilrettelegg(dsn =, behandler = 1, grupperinger = 0);
+%macro tilrettelegg(dsn =, behandler = 1, grupperinger = 0, hdg = 0, icd = 0);
 
 /*
 Lage datasett med innbyggere
@@ -265,16 +265,20 @@ proc sql;
          Ermann,
          hastegrad, 
          DRGtypeHastegrad,
+         BehHF,
+         BehSh,
+      %end;
+      Behhf_hn,
+	  %if &hdg ne 0 %then %do;
+	     hdg,
+	  %end;
+	  %if &icd ne 0 %then %do;
+	     ICD10Kap,
       %end;
       BehRHF,
-      %if &behandler eq 0 %then %do;
-         BehHF,
-         Behhf_hn,
-         BehSh,
-		%end;
-		%else %do;
+      %if &behandler ne 0 %then %do;
          behandler,
-		%end;
+      %end;
       BoRHF, 
       BoHF,
       BoShHN, 
@@ -306,15 +310,21 @@ from tabl4
          ermann,
          hastegrad,
          DRGtypeHastegrad,
-      %end;
-      %if &behandler eq 0 %then %do;
          BehHF,
-         Behhf_hn,
          BehSh,
       %end;
-      %else %do;
+	  Behhf_hn,
+	  %if &hdg ne 0 %then %do;
+	     hdg,
+	  %end;
+	  %if &icd ne 0 %then %do;
+	     ICD10Kap,
+	  %end;
+      BehRHF,
+      %if &behandler ne 0 %then %do;
          behandler,
       %end;
+	  BoRHF,
       BoHF,
       BoShHN;
 quit;
@@ -326,16 +336,17 @@ set &dsn._ut;
    %if &grupperinger ne 0 %then %do;
       rename Ald_gr4 = alder;
       rename ermann = kjonn;
+      rename Behhf = behandlende_HF;
+      rename BehSh = behandlende_sykehus;
+   %end;
+   rename Behhf_hn = behandlende_HF_HN;
+   %if &hdg ne 0 %then %do;
+      rename hdg = Hoveddiagnosegruppe;
    %end;
    rename BoRHF = boomr_RHF;
    rename BoHF = boomr_HF;
    rename BoShHN = boomr_sykehus;
    rename BehRHF = behandlende_RHF;
-   %if &behandler eq 0 %then %do;
-      rename Behhf = behandlende_HF;
-      rename Behhf_hn = behandlende_HF_HN;
-      rename BehSh = behandlende_sykehus;
-   %end;
 run;
 
 data &dsn._ut;

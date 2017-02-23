@@ -161,5 +161,33 @@ value BoShHN
 11='Boomr Sandnessjøen'
 12='Bor utenfor Helse Nord';
 
+   value HDG
+      1 = 'Sykdommer i nervesystemet'  
+      2 = 'Øyesykdommer'  
+      3 = 'Øre-, nese- og halssykdommer'  
+      4 = 'Sykdommer i åndedrettsorganene'  
+      5 = 'Sykdommer i sirkulasjonsorganene'  
+      6 = 'Sykdommer i fordøyelsesorganene'  
+      7 = 'Sykdommer i lever, galleveier og bukspyttkjertel'  
+      8 = 'Sykdommer i muskel-, skjelettsystemet og bindevev'  
+      9 = 'Sykdommer i hud og underhud'  
+      10 = 'Indresekretoriske-, ernærings- og stoffskiftesykdommer'  
+      11 = 'Nyre- og urinveissykdommer'  
+      12 = 'Sykdommer i mannlige kjønnsorganer'  
+      13 = 'Sykdommer i kvinnelige kjønnsorganer'  
+      14 = 'Sykdommer under svangerskap, fødsel og barseltid'  
+      15 = 'Nyfødte med tilstander som har oppstått i perinatalperioden'  
+      16 = 'Sykdommer i blod, bloddannende organer og immunapparat'  
+      17 = 'Myeloproliferative sykdommer og lite differensierte svulster'  
+      18 = 'Infeksiøse og parasittære sykdommer'  
+      19 = 'Psykiske lidelser og rusproblemer'  
+      21 = 'Skade, forgiftninger og toksiske effekter av medikamenter/andre stoffer, medikamentmisbruk og organiske sinnslidelser fr'  
+      22 = 'Forbrenninger'  
+      23 = 'Faktorer som påvirker helsetilstand - andre kontakter med helsetjenesten'
+      24 = 'Signifikant multitraume'
+      30 = 'Sykdommer i bryst'  
+      40 = 'Kategorier på tvers av flere hoveddiagnosegrupper'  
+      99 = 'Kategorier for feil og uvanlige diagnose-prosedyrekombinasjoner'
+      999 = 'Ikke registrert hoveddiagnosegruppe';
 
 run;
