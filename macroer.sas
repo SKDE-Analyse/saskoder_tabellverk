@@ -42,8 +42,8 @@ Returnerer to datasett:
 
 /* TODO: kjønnsjustere */
 data innbygg;
-set innbygg.innb_2004_2015_bydel_allebyer;
-  where aar in (2011:2015);
+set innbygg.innb_2004_2016_bydel_allebyer;
+  where aar in (2012:2016);
   %boomraader;
 run;
 

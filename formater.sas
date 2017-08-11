@@ -1,5 +1,5 @@
 
-%let filbane=\\hn.helsenord.no\UNN-Avdelinger\SKDE.avd\Analyse\Data\SAS\;
+%let filbane=\\tos-sas-skde-01\SKDE_SAS\;
 options sasautos=("&filbane.Makroer\master" SASAUTOS);
 
 %include "&filbane.Formater\master\SKDE_somatikk.sas";
